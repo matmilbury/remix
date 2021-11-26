@@ -75,6 +75,8 @@ export interface AppConfig {
   devServerBroadcastDelay?: number;
 
   mdx?: RemixMdxConfig | RemixMdxConfigFunction;
+
+  supportedLocales?: string[];
 }
 
 /**
@@ -216,7 +218,14 @@ export async function readConfig(
     root: { path: "", id: "root", file: rootRouteFile }
   };
   if (fs.existsSync(path.resolve(appDirectory, "routes"))) {
-    let conventionalRoutes = defineConventionalRoutes(appDirectory);
+    // check if 'supportedLocales' key exists in appConfig
+    // if yes, for each route file
+    // for each supported locale
+    // define route
+    let conventionalRoutes = defineConventionalRoutes(
+      appDirectory,
+      appConfig.supportedLocales
+    );
     for (let key of Object.keys(conventionalRoutes)) {
       let route = conventionalRoutes[key];
       routes[route.id] = { ...route, parentId: route.parentId || "root" };

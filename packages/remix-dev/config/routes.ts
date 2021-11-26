@@ -54,6 +54,8 @@ export interface DefineRouteOptions {
    * Should be `true` if this is an index route that does not allow child routes.
    */
   index?: boolean;
+
+  locale?: string;
 }
 
 interface DefineRouteChildren {
@@ -118,6 +120,7 @@ export function defineRoutes(
     optionsOrChildren,
     children
   ) => {
+    console.log(`Defining route ${path} for file ${file}`);
     if (alreadyReturned) {
       throw new Error(
         "You tried to define routes asynchronously but started defining " +
@@ -141,7 +144,7 @@ export function defineRoutes(
       path: path ? path : undefined,
       index: options.index ? true : undefined,
       caseSensitive: options.caseSensitive ? true : undefined,
-      id: createRouteId(file),
+      id: createRouteId(file, options.locale),
       parentId:
         parentRoutes.length > 0
           ? parentRoutes[parentRoutes.length - 1].id
@@ -165,7 +168,10 @@ export function defineRoutes(
   return routes;
 }
 
-export function createRouteId(file: string) {
+export function createRouteId(file: string, locale?: string) {
+  if (locale) {
+    return path.join(locale, normalizeSlashes(stripFileExtension(file)));
+  }
   return normalizeSlashes(stripFileExtension(file));
 }
 

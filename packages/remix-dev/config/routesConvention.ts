@@ -21,20 +21,26 @@ export function isRouteModuleFile(filename: string): boolean {
  * For example, a file named `app/routes/gists/$username.tsx` creates a route
  * with a path of `gists/:username`.
  */
-export function defineConventionalRoutes(appDir: string): RouteManifest {
+export function defineConventionalRoutes(
+  appDir: string,
+  locales?: string[]
+): RouteManifest {
   let files: { [routeId: string]: string } = {};
 
   // First, find all route modules in app/routes
   visitFiles(path.join(appDir, "routes"), file => {
-    let routeId = createRouteId(path.join("routes", file));
+    // TODO support scenario where there are no locales defined. The code still has to execute at least once
+    locales?.forEach(locale => {
+      let routeId = createRouteId(path.join("routes", locale, file));
 
-    if (isRouteModuleFile(file)) {
-      files[routeId] = path.join("routes", file);
-    } else {
-      throw new Error(
-        `Invalid route module file: ${path.join(appDir, "routes", file)}`
-      );
-    }
+      if (isRouteModuleFile(file)) {
+        files[routeId] = path.join("routes", file);
+      } else {
+        throw new Error(
+          `Invalid route module file: ${path.join(appDir, "routes", file)}`
+        );
+      }
+    });
   });
 
   let routeIds = Object.keys(files).sort(byLongestFirst);
@@ -55,10 +61,13 @@ export function defineConventionalRoutes(appDir: string): RouteManifest {
         routeId.slice((parentId || "routes").length + 1)
       );
 
+      console.log(`routePath for ${routeId} is ${routePath}`);
+
       let isIndexRoute = routeId.endsWith("/index");
       let fullPath = createRoutePath(routeId.slice("routes".length + 1));
       let uniqueRouteId = (fullPath || "") + (isIndexRoute ? "?index" : "");
 
+      // TODO this is now most likely broken
       if (typeof uniqueRouteId !== "undefined") {
         if (uniqueRoutes.has(uniqueRouteId)) {
           throw new Error(
@@ -84,11 +93,14 @@ export function defineConventionalRoutes(appDir: string): RouteManifest {
           );
         }
 
+        let locale = routeId.split("/")[1];
         defineRoute(routePath, files[routeId], {
-          index: true
+          index: true,
+          locale
         });
       } else {
-        defineRoute(routePath, files[routeId], () => {
+        let locale = routeId.split("/")[1];
+        defineRoute(routePath, files[routeId], { locale }, () => {
           defineNestedRoutes(defineRoute, routeId);
         });
       }
